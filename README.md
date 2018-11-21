@@ -1,2 +1,2 @@
 # WattWattDonation
-One page donation site
+One page funding portal
