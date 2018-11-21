@@ -1,0 +1,25 @@
+{
+  "name": "wattwattdonation",
+  "version": "1.0.0",
+  "description": "One page donation site",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vincenz5/WattWattDonation.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vincenz5/WattWattDonation/issues"
+  },
+  "homepage": "https://github.com/vincenz5/WattWattDonation#readme",
+  "dependencies": {
+    "bignumber.js": "^8.0.1",
+    "connect": "^3.6.6",
+    "serve-static": "^1.13.2",
+    "web3": "^0.20.5"
+  }
+}
