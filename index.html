@@ -1,227 +1,346 @@
 <head>
-  <style>
-    body {
-      background: url("mybackgroundimage.gif") repeat;
-    }
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=.6">
 
-    #banner {
-      position: absolute;
-      top: 0px;
-      left: 0px;
-      right: 0px;
-      width: 100%;
-      height: 200px;
-      z-index: -1;
-    }
+    <!-- Bring in Web3 -->
+    <script type="text/javascript" src=”web3.min.js”></script>
+    <script type="text/javascript" src='node_modules/bignumber.js/bignumber.js'></script>
 
-    
-  </style>
+    <!-- Check for Web3 -->
+    <script type="text/javascript">
+        window.addEventListener('load', async () => {
+            // Modern dapp browsers...
+            if (window.ethereum) {
+                window.web3 = new Web3(ethereum);
+                try {
+                    // Request account access if needed
+                    await ethereum.enable();
+                    // Acccounts now exposed
+                    web3.eth.sendTransaction({/* ... */ });
+                } catch (error) {
+                    // User denied account access...
+                }
+            }
+            // Legacy dapp browsers...
+            else if (window.web3) {
+                window.web3 = new Web3(web3.currentProvider);
+                // Acccounts always exposed
+                web3.eth.sendTransaction({/* ... */ });
+            }
+            // Non-dapp browsers...
+            else {
+                console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
+            }
+        });
+
+        // Donation function called by button push
+        function sendDonation() {
+            console.log("Donation is on the way!")
+            var donationContractAddress = "0xc44c04DF5Bd67c8353944d56aF09484180953002";
+            var payee = "0x4595197A4e3E9E9dfdD3a3fC3A3fFA9de7cb01d1";
+            //     if (web3.eth.accounts[0] !== userAccount) {
+            var userAccount = web3.eth.accounts[0];
+            var donationContractABI = [
+                {
+                    "constant": false,
+                    "inputs": [
+                        {
+                            "name": "payee",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "deposit",
+                    "outputs": [],
+                    "payable": true,
+                    "stateMutability": "payable",
+                    "type": "function"
+                },
+                {
+                    "constant": false,
+                    "inputs": [
+                        {
+                            "name": "recipient",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "transferPrimary",
+                    "outputs": [],
+                    "payable": false,
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "constant": false,
+                    "inputs": [
+                        {
+                            "name": "payee",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "withdraw",
+                    "outputs": [],
+                    "payable": false,
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "anonymous": false,
+                    "inputs": [
+                        {
+                            "indexed": true,
+                            "name": "payee",
+                            "type": "address"
+                        },
+                        {
+                            "indexed": false,
+                            "name": "weiAmount",
+                            "type": "uint256"
+                        }
+                    ],
+                    "name": "Deposited",
+                    "type": "event"
+                },
+                {
+                    "anonymous": false,
+                    "inputs": [
+                        {
+                            "indexed": true,
+                            "name": "payee",
+                            "type": "address"
+                        },
+                        {
+                            "indexed": false,
+                            "name": "weiAmount",
+                            "type": "uint256"
+                        }
+                    ],
+                    "name": "Withdrawn",
+                    "type": "event"
+                },
+                {
+                    "anonymous": false,
+                    "inputs": [
+                        {
+                            "indexed": false,
+                            "name": "recipient",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "PrimaryTransferred",
+                    "type": "event"
+                },
+                {
+                    "constant": true,
+                    "inputs": [
+                        {
+                            "name": "payee",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "depositsOf",
+                    "outputs": [
+                        {
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "payable": false,
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "constant": true,
+                    "inputs": [],
+                    "name": "primary",
+                    "outputs": [
+                        {
+                            "name": "",
+                            "type": "address"
+                        }
+                    ],
+                    "payable": false,
+                    "stateMutability": "view",
+                    "type": "function"
+                }
+            ]
+            var Amount = document.getElementById('amount').value;
+            console.log(Amount)
+            var B = web3.toWei(Amount, "ether")
+            var DonationContract = web3.eth.contract(donationContractABI);
+            var donationContract = DonationContract.at(donationContractAddress);
+
+            // web3.eth.getBlock(48, function (error, result) {
+            //     if (!error)
+            //         console.log(JSON.stringify(result));
+            //     else
+            //         console.error(error);
+            // })
+            // one USD: 10000000000000000
+            // donationContract.deposit(payee, { "from": web3.eth.accounts[0] })
+            // console.log(donationContract)
+            donationContract.deposit(payee, { gas: 200000, value: B }, console.log)
+                // donationContract.deposit(payee, { gas: 200000, value: Amount }, console.log)
+                .on("receipt", function (receipt) {
+                    $("#txStatus").text("Thank you for your donation! ");
+                })
+                .on("error", function (error) {
+                    // Do something to alert the user their transaction has failed
+                    $("#txStatus").text(error);
+                });
+            var accountInterval = setInterval(function () {
+                // Check if account has changed
+                if (web3.eth.accounts[0] !== userAccount) {
+                    userAccount = web3.eth.accounts[0];
+                    // Call a function to update the UI with the new account
+                    // getDonationsByOwner(userAccount)
+                    //     .then(displayDonations);
+                }
+            }, 10000);
+
+
+            // var inWei = web3.toWei('10', 'ether')
+            // function listenForClicks(miniToken) {
+            //     var button = document.querySelector('button.transferFunds')
+            //     button.addEventListener('click', function () {
+            //         miniToken.transfer(toAddress, value, { from: addr })
+            //             .then(function (txHash) {
+            //                 console.log('Transaction sent')
+            //                 console.dir(txHash)
+            //                 waitForTxToBeMined(txHash)
+            //             })
+            //             .catch(console.error)
+            //     })
+            // }
+
+            async function waitForTxToBeMined(txHash) {
+                let txReceipt
+                while (!txReceipt) {
+                    try {
+                        txReceipt = await eth.getTransactionReceipt(txHash)
+                    } catch (err) {
+                        return indicateFailure(err)
+                    }
+                }
+            }
+        }
+    </script>
+
 </head>
-<body>
-    <ea-toolbar>
-        <header>
-          <p>
-            <a routerLink="">WattWatt</a>
-          </p>
-        </header>
-        <aside>
-          <a routerLink="/about">About</a>
-          <a routerLink="/whitepaper">Whitepaper</a>
-          <!-- <button outline small style="--ea-button-padding: 0.2em 0.5em; --ea-button-border: var(--ea-color-3);">
-            <a routerLink="/contact">Contact</a>
-          </button> -->
-        </aside>
-      </ea-toolbar>
-    
-      <ea-drawer>
-        <section>
-          <a routerLink="/donation">Donation Portal</a>
-          <a routerLink="/crowdfunding">Crowdfunding Portal</a>
-          <!-- <a routerLink="/education">Education Portal</a> -->
-        </section>
-      </ea-drawer>
-</body>
 
-<div class="ea-card" unset style="margin: 8rem 0; position:relative;">
-  <div class="ea-card-content" grid style="--ea-card-content-grid: repeat(2, 1fr);">
+<header>
     <div>
-      <h1>WattWatt</h1>
-      <h2>Fund a Panel, Save the World</h2>
-      <button>
-        <a href="Wyre/Wyre.html">Get Verified</a>
-      </button>
-      <button>
-          <a href="FundingPortal/fundingportal.html">Checkout the Portal!</a>
-        </button>
-      <div style="display:flex;">
-        <button>
-          <a href="https://vincenzbuhler.typeform.com/to/a7wnzR">Fund a Project</a>
-        </button>
-        <button>
-          <a href="https://vincenzbuhler.typeform.com/to/oN0Xr7">Apply for Loan</a>
-        </button>
-      </div>
-    </div>
-  </div>
-  <img src="../assets/images/wattwattHeader.png" alt="" style="position: absolute;
-        top: -10vw;
-        width: 50%;
-        right: -15vw;
-        height: 30rem;">
+        <h1>WattWatt</h1>
+        <h2>Fund a Panel, Save the World</h2>
+        <p>Funding Page</p>
+        <h2>(Page in Construction, Only Works on a PC)</h2>
+        <a target="_blank"  rel="noopener noreferrer" href="https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn" style="width:300px;height:300px;">
+            <button style:"width:300px;height:300px;">Download Metamask</button>
+          </a>
+        </div>
+        <br>
+        <div style:"margin-top:10px;">
+            <a target="_blank"  rel="noopener noreferrer" href="https://faucet.rinkeby.io/" style="width:300px;height:300px;">
+                <button style:"width:300px;height:300px;">Get Free Money</button>
+            </a>
+        </div>
+        <br>
+        <div>  
+                <a target="_blank"  rel="noopener noreferrer" href="Wyre/Wyre.html" style="width:300px;height:300px;">
+                    <button style:"width:300px;height:300px;">Try SendWyre</button>
+                </a></div>
+
+</header>
+
+<div>
+    <!-- <button onClick="sendDonation()" id="transfer" style="width:300px;display:flex;" target="_blank;">Donate Through Smart Contract!</button> -->
 </div>
 
-<div class="ea-card" unset>
-  <div class="ea-card-header">
-    <h2>WattWatt Energy Revolution</h2>
-  </div>
-  <p>
-    The existing finance available to solar installers and their customers offers high costs, unfair conditions, and slow service.
-    At the same time, customers at banks see very poor interest rate instruments and have no connection to what their capital
-    is funding. The space is rife with middle-men involved to ensure a smooth process. With blockchain, less middle-men are
-    necessary because the process is governed by the community and not individual entities. Individuals within the community
-    have an ownership stake and are incentivized to be active. This sets up a solution that aligns the community and solar
-    developers. They are incentivized to keep away undesirable and risky projects from entering the space to begin with and
-    care about the overall health of the platform and its projects.
-  </p>
-  <div class="ea-card-content" grid style="--ea-card-content-grid:repeat(3,1fr);grid-gap:2rem;">
-    <div class="ea-card" unset>
-      <div class="ea-card-header" style="display: flex; justify-content: center;">
-        <img src="../../assets/images/financing.svg" alt="" />
-      </div>
-      <h2 style="text-align:center;">Smart Contracting Vehicle</h2>
-      <div class="ea-card-content">
-        <ul>
-          <li>
-            <span icon check-circle></span>
-            <p>Over your ability to transfer without intermediaries</p>
-          </li>
-          <li>
-            <span icon check-circle></span>
-            <p>Small transfer times with no cencorship possible</p>
-          </li>
-          <li>
-            <span icon check-circle></span>
-            <p>Immutability if desired</p>
-          </li>
-        </ul>
-      </div>
-    </div>
+<!-- <body>
+    <div id="wrapper">
+ 
+        <p>WattWatt has partnered with local Puerto Rican initiatives, including Off Grid Relief, to fundraise the money used
+            to install solar generation and battery backup for homes in the mountains of Puerto Rico. If you chose to donate
+            using this page, your capital will be collected by a smart contract and transfered to the address of the installers.
+            You can see this smart contract, its code, and its transactions by clicking See Crowdfunding Contract.</p>
 
-    <div class="ea-card" unset>
-      <div class="ea-card-header" style="display: flex; justify-content: center;">
-        <img src="../../assets/images/growth.svg" alt="" />
-      </div>
-      <h2 style="text-align:center;">Secure Crowdfunding Mechanism</h2>
-      <div class="ea-card-content">
-        <ul style="margin: 0; padding: 0;">
-          <li>
-            <span icon check-circle></span>
-            <p>Contracts built by experienced smart contract team</p>
-          </li>
-          <li>
-            <span icon check-circle></span>
-            <p>Highly scalable to handle growing investment demand</p>
-          </li>
-          <li>
-            <span icon check-circle></span>
-            <p>Automated repayment and low cost service</p>
-          </li>
-        </ul>
-      </div>
-    </div>
+        Donation Amount (in Ether):
+        <input type="number" size="50" id="amount" value="0.1" min="1">
+        <br>
+        <button onClick="sendDonation()" id="transfer" style="width:300px;display:flex;" target="_blank;">Donate Through Smart Contract!</button>
 
-    <div class="ea-card" unset>
-      <div class="ea-card-header" style="display: flex; justify-content: center;">
-        <img height="124" src="../../assets/images/solarpanel.svg" alt="" />
-      </div>
-      <h2 style="text-align:center;">Verification of Investors Interest</h2>
-      <div class="ea-card-content">
-        <ul>
-          <li>
-            <span icon check-circle></span>
-            <p>WattWatt team composed of experienced professionals</p>
-          </li>
-          <li>
-            <span icon check-circle></span>
-            <p>Decentralization allows for community verification</p>
-          </li>
-          <li>
-            <span icon check-circle></span>
-            <p>
-              Token economics built to align verifiers interest with investorse
-            </p>
-          </li>
-        </ul>
-      </div>
     </div>
-  </div>
+</body> -->
+
+<div class="card">
+    <div class="card-header">
+        <p>Currently Fundraising!</p>
+    </div>
+    <div class="card-content">
+        <h2>200 MW Commercial Project - Mexico City, Mexico</h2>
+        <img src="../assets/images/Soriana.jpg" style="width:90%;height:40%;">
+        <p>Installation: Mexico City Installer Corp</p>
+    </div>
+    <div class="card-content">
+        <p>Size: 200 MW, 300W Trina panels, 625,000 panels</p>
+    </div>
+    <div class="card-content">
+        <p>Return: 11.3% Annual Percentage Rate</p>
+    </div>
+    <div class="card-footer">
+        <!-- <button small>Bookmark</button> -->
+
+        Funding Amount (in Ether):
+        <input type="number" size="50" id="amount" value="0.1" min="1">
+        <br>
+        <button onClick="sendDonation()" id="transfer" style="width:250px;display:flex;margin-top:15px;" target="_blank;">Fund this project! (Rinkeby Network)</button>
+    </div>
 </div>
 
-<div class="ea-card" unset>
-  <div class="ea-card-content" grid style="--ea-card-content-grid:repeat(3,1fr);grid-gap:2rem;">
-    <div class="ea-card">
-      <div class="ea-card-header" style="padding:0;">
-        <img src="../assets/images/code.jpeg" style="width:100%;height:100%;" />
-      </div>
-      <div class="ea-card-content">
-        <ul>
-          <h4>Problem</h4>
-          <p>Existing system is chain of intermediaries</p>
-          <p>Difficult and risky to finance on your own</p>
-          <h4>Solution</h4>
-          <p>Running capital raise and repayment through blockchain</p>
-          <p>Assemble a solar investment community to run the platform</p>
-          <p>Individuals earn more from their capital under the WattWatt model</p>
-        </ul>
-      </div>
+<div class="card2">
+    <div class="card-header">
+        <p>Currently Fundraising!</p>
     </div>
+    <div class="card-content">
+        <h2>180 MW Commercial Project - Merida, Mexico</h2>
+        <img src="../assets/images/Mega.jpg" style="width:90%;height:40%;">
+        <p>Installation: Yucatan Installer Corp</p>
+    </div>
+    <div class="card-content">
+        <p>Size: 180 MW, 300W Trina panels, 525,000 panels</p>
+    </div>
+    <div class="card-content">
+        <p>Return: 10.9% Annual Percentage Rate</p>
+    </div>
+    <div class="card-footer">
+        <!-- <button small>Bookmark</button> -->
 
-    <div class="ea-card">
-      <div class="ea-card-header" style="padding:0;">
-        <img src="../assets/images/buildings.jpeg" style="width:100%;height:100%;" />
-      </div>
-      <div class="ea-card-content">
-        <ul>
-          <h4>Problem</h4>
-          <p>Finance industry dictates most terms</p>
-          <p>Capital takes extended period to arrive</p>
-          <h4>Solution</h4>
-          <p>Leveling playing field for installers with crowdfunding</p>
-          <p>Financers become personally invested in solar projects</p>
-          <p>Cryptocurrency capital arrives same-day as opposed to multiple</p>
-        </ul>
-      </div>
+        Funding Amount (in Ether):
+        <input type="number" size="50" id="amount" value="0.1" min="1">
+        <br>
+        <button onClick="sendDonation()" id="transfer" style="width:250px;display:flex;margin-top:15px;" target="_blank;">Fund this project! (Rinkeby Network)</button>
     </div>
-
-    <div class="ea-card">
-      <div class="ea-card-header" style="padding:0;">
-        <img src="../assets/images/analytics.jpg" style="width:100%;height:100%;" />
-      </div>
-      <div class="ea-card-content">
-        <ul>
-          <h4>Problem</h4>
-          <p>Financial due diligence can be expensive</p>
-          <p>Investors skeptical of non-verified projects</p>
-          <h4>Solution</h4>
-          <p>Curated registry managed by tokens</p>
-          <p>Verifiers compensated directly through economics of token model</p>
-          <p>
-            Verifiers are incentivized to increase value of network tokens and the registry
-          </p>
-        </ul>
-      </div>
-    </div>
-  </div>
 </div>
 
-<div class="ea-card" unset style="margin: 4rem 0;">
-  <div class="ea-card-content" grid style="--ea-card-content-grid: repeat(2, 1fr); align-items: center;">
-    <main>
-      <h2>Join the conversation</h2>
-      <h3>Get start in our Discord</h3>
+<footer>
+    <main class="footer-content" style="display:flex;justify-content:center;align-items:center;height:20px;">
+        <a class="footer-links" href="https://github.com/wattwattenergy">
+            <img src="../../assets/images/github.svg" alt="">
+        </a>
+
+        <a class="footer-links" href="https://twitter.com/wattwattenergy">
+            <img height="18" src="../../assets/images/twitterWhite.svg" alt="">
+        </a>
+
+        <a class="footer-links" href="https://www.youtube.com/channel/UCgtn4kRGfcscD--zlEqlmaA?view_as=subscriber">
+            <img src="../../assets/images/youtube.svg" alt="">
+        </a>
+
+        <a class="footer-links" href="https://medium.com/wattwattenergy">
+            <img src="../../assets/images/medium.svg" alt="">
+        </a>
+
+        <a class="footer-links" href="https://discord.gg/vqWYcCj">
+            <img src="../../assets/images/discord.svg" alt="">
+        </a>
     </main>
-    <aside style="display: flex; justify-content: flex-end">
-      <button large>Discord</button>
-    </aside>
-  </div>
-</div>
+</footer>
